@@ -1,0 +1,41 @@
+server:
+  port: 8080
+
+spring:
+
+  application:
+    name: campus-market
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/campus_market?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+    username: root
+    password: 123456
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password:
+      database: 0
+
+mybatis-plus:
+
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    map-underscore-to-camel-case: true
+
+  global-config:
+    db-config:
+      id-type: auto
+
+knife4j:
+  enable: true
+
+springdoc:
+
+  api-docs:
+    enabled: true
+
+  swagger-ui:
+    enabled: true
