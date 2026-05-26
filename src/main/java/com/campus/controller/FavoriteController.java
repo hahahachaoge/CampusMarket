@@ -23,25 +23,15 @@ public class FavoriteController {
             in = ParameterIn.HEADER
     )
     public Result<String> add(
-        @PathVariable Long goodsId,
-        @RequestHeader("token")
-        String token
+        @PathVariable Long goodsId
     ){
         favoriteService.add(goodsId);
         return Result.success("收藏成功");
     }
 
     @DeleteMapping("/{goodsId}")
-    @Parameter(
-            name = "token",
-            description = "用户token",
-            required = true,
-            in = ParameterIn.HEADER
-    )
     public Result<String> remove(
-            @PathVariable Long goodsId,
-            @RequestHeader("token")
-            String token
+            @PathVariable Long goodsId
     ){
         favoriteService.remove(goodsId);
         return Result.success("取消收藏成功");
@@ -49,16 +39,7 @@ public class FavoriteController {
 
     //我的收藏
     @GetMapping("/my")
-    @Parameter(
-            name = "token",
-            description = "用户token",
-            required = true,
-            in = ParameterIn.HEADER
-    )
     public Result<Page<GoodsVO>> my(
-            @RequestHeader("token")
-            String token,
-
             @RequestParam(defaultValue = "1")
             Integer current,
 

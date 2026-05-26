@@ -6,6 +6,7 @@ import com.campus.context.UserContext;
 import com.campus.entity.Goods;
 import com.campus.entity.Order;
 import com.campus.entity.User;
+import com.campus.enums.GoodsStatusEnum;
 import com.campus.mapper.GoodsMapper;
 import com.campus.mapper.OrderMapper;
 import com.campus.mapper.UserMapper;
@@ -14,6 +15,7 @@ import com.campus.vo.OrderVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.campus.enums.OrderStatusEnum;
 
 import java.util.List;
 import java.util.UUID;
@@ -53,10 +55,10 @@ public class OrderServiceImpl implements OrderService {
         //价格
         order.setPrice(goods.getPrice());
         //待支付
-        order.setStatus(0);
+        order.setStatus(OrderStatusEnum.UNPAID.getCode());
         orderMapper.insert(order);
         //商品改为已售出
-        goods.setStatus(3);
+        goods.setStatus(GoodsStatusEnum.SOLD.getCode());
         goodsMapper.updateById(goods);
     }
 
@@ -79,18 +81,7 @@ public class OrderServiceImpl implements OrderService {
             vo.setStatus(order.getStatus());
             vo.setCreateTime(order.getCreateTime());
             //状态文字
-            if(order.getStatus() == 0){
-                vo.setStatusText("待支付");
-            }
-            else if(order.getStatus() == 1){
-                vo.setStatusText("已支付");
-            }
-            else if(order.getStatus() == 2){
-                vo.setStatusText("已完成");
-            }
-            else if(order.getStatus() == 3){
-                vo.setStatusText("已取消");
-            }
+            vo.setStatusText(OrderStatusEnum.getText(order.getStatus()));
             //查询商品
             Goods goods = goodsMapper.selectById(order.getGoodsId());
             if(goods != null){
@@ -135,18 +126,7 @@ public class OrderServiceImpl implements OrderService {
             vo.setStatus(order.getStatus());
             vo.setCreateTime(order.getCreateTime());
             //状态文字
-            if(order.getStatus() == 0){
-                vo.setStatusText("待支付");
-            }
-            else if(order.getStatus() == 1){
-                vo.setStatusText("已支付");
-            }
-            else if(order.getStatus() == 2){
-                vo.setStatusText("已完成");
-            }
-            else if(order.getStatus() == 3){
-                vo.setStatusText("已取消");
-            }
+            vo.setStatusText(OrderStatusEnum.getText(order.getStatus()));
             //商品信息
             Goods goods = goodsMapper.selectById(order.getGoodsId());
             if(goods != null){
@@ -187,11 +167,11 @@ public class OrderServiceImpl implements OrderService {
             throw new RuntimeException("无权限操作");
         }
         //必须是待支付
-        if(order.getStatus() != 0){
+        if(!order.getStatus().equals(OrderStatusEnum.UNPAID.getCode())){
             throw new RuntimeException("订单状态错误");
         }
         //修改状态
-        order.setStatus(1);
+        order.setStatus(OrderStatusEnum.PAID.getCode());
         orderMapper.updateById(order);
     }
 
@@ -208,11 +188,11 @@ public class OrderServiceImpl implements OrderService {
             throw new RuntimeException("无权限操作");
         }
         //必须已支付
-        if(order.getStatus() != 1){
+        if(!order.getStatus().equals(OrderStatusEnum.PAID.getCode())){
             throw new RuntimeException("订单状态错误");
         }
         //已完成
-        order.setStatus(2);
+        order.setStatus(OrderStatusEnum.FINISHED.getCode());
         orderMapper.updateById(order);
     }
 
@@ -229,16 +209,16 @@ public class OrderServiceImpl implements OrderService {
             throw new RuntimeException("无权限操作");
         }
         //只能取消待支付
-        if(order.getStatus() != 0){
+        if(!order.getStatus().equals(OrderStatusEnum.UNPAID.getCode())){
             throw new RuntimeException("当前订单无法取消");
         }
         //修改订单状态
-        order.setStatus(3);
+        order.setStatus(OrderStatusEnum.CANCELED.getCode());
         orderMapper.updateById(order);
         //商品恢复在售
         Goods goods = goodsMapper.selectById(order.getGoodsId());
         if(goods != null){
-            goods.setStatus(1);
+            goods.setStatus(GoodsStatusEnum.ON_SALE.getCode());
             goodsMapper.updateById(goods);
         }
     }

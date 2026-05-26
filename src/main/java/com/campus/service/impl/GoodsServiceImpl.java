@@ -8,6 +8,7 @@ import com.campus.dto.GoodsSearchDTO;
 import com.campus.dto.GoodsUpdateDTO;
 import com.campus.entity.Goods;
 import com.campus.entity.User;
+import com.campus.enums.GoodsStatusEnum;
 import com.campus.mapper.UserMapper;
 import com.campus.mapper.GoodsMapper;
 import com.campus.service.GoodsService;
@@ -36,7 +37,7 @@ public class GoodsServiceImpl implements GoodsService {
         goods.setOriginalPrice(dto.getOriginalPrice());
         goods.setCategory(dto.getCategory());
         goods.setCover(dto.getCover());
-        goods.setStatus(1);
+        goods.setStatus(GoodsStatusEnum.ON_SALE.getCode());
         goods.setViewCount(0);
         goodsMapper.insert(goods);
     }
@@ -48,7 +49,7 @@ public class GoodsServiceImpl implements GoodsService {
     ){
         Page<Goods> page = new Page<>(current,size);
         LambdaQueryWrapper<Goods> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(Goods::getStatus,1);
+        wrapper.eq(Goods::getStatus,GoodsStatusEnum.ON_SALE.getCode());
         //最新发布
         wrapper.orderByDesc(Goods::getCreateTime);
         goodsMapper.selectPage(page,wrapper);
@@ -90,15 +91,7 @@ public class GoodsServiceImpl implements GoodsService {
         GoodsDetailVO vo = new GoodsDetailVO();
         BeanUtils.copyProperties(goods,vo);
         //状态文字
-        if(goods.getStatus() == 1){
-            vo.setStatusText("在售");
-        }
-        else if(goods.getStatus() == 2){
-            vo.setStatusText("已下架");
-        }
-        else if(goods.getStatus() == 3){
-            vo.setStatusText("已售出");
-        }
+        vo.setStatusText(GoodsStatusEnum.getText(goods.getStatus()));
         //发布人信息
         if(user != null){
             vo.setNickname(user.getNickname());
@@ -117,7 +110,7 @@ public class GoodsServiceImpl implements GoodsService {
         );
         LambdaQueryWrapper<Goods> wrapper = new LambdaQueryWrapper<>();
         //只查询在售商品
-        wrapper.eq(Goods::getStatus,1);
+        wrapper.eq(Goods::getStatus,GoodsStatusEnum.ON_SALE.getCode());
         //关键字搜索
         if(StringUtils.hasText(dto.getKeyword())){
             wrapper.like(
@@ -190,17 +183,7 @@ public class GoodsServiceImpl implements GoodsService {
                     //状态
                     vo.setStatus(goods.getStatus());
                     //状态文字
-                    if(goods.getStatus() == 1){
-                        vo.setStatusText("在售");
-                    }
-                    else if(goods.getStatus() == 2){
-
-                        vo.setStatusText("已下架");
-
-                    }else if(goods.getStatus() == 3){
-
-                        vo.setStatusText("已售出");
-                    }
+                    vo.setStatusText(GoodsStatusEnum.getText(goods.getStatus()));
                     return vo;
             }).toList()
         );
@@ -233,13 +216,7 @@ public class GoodsServiceImpl implements GoodsService {
                 // 商品状态
                 vo.setStatus(goods.getStatus());
                 // 状态文字
-                if(goods.getStatus() == 1){
-                    vo.setStatusText("在售");
-                }else if(goods.getStatus() == 2){
-                    vo.setStatusText("已下架");
-                }else if(goods.getStatus() == 3){
-                    vo.setStatusText("已售出");
-                }
+                vo.setStatusText(GoodsStatusEnum.getText(goods.getStatus()));
                 return vo;
             }).toList()
         );
@@ -278,7 +255,7 @@ public class GoodsServiceImpl implements GoodsService {
             throw new RuntimeException("无权限操作");
         }
         //下架
-        goods.setStatus(2);
+        goods.setStatus(GoodsStatusEnum.OFF_SALE.getCode());
         goodsMapper.updateById(goods);
     }
 

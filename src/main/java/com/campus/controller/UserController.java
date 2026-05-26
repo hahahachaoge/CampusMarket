@@ -9,9 +9,11 @@ import com.campus.service.UserService;
 import com.campus.vo.UserVO;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+@Tag(name = "用户模块")
 @RestController
 @RequestMapping("/user")
 @RequiredArgsConstructor

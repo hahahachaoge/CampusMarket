@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.campus.context.UserContext;
 import com.campus.entity.Favorite;
 import com.campus.entity.Goods;
+import com.campus.enums.GoodsStatusEnum;
 import com.campus.mapper.FavoriteMapper;
 import com.campus.mapper.GoodsMapper;
 import com.campus.service.FavoriteService;
@@ -70,15 +71,7 @@ public class FavoriteServiceImpl implements FavoriteService {
             GoodsVO vo = new GoodsVO();
             BeanUtils.copyProperties(goods,vo);
             //状态文字
-            if(goods.getStatus() == 1){
-                vo.setStatusText("在售");
-            }
-            else if(goods.getStatus() == 2){
-                vo.setStatusText("已下架");
-            }
-            else if(goods.getStatus() == 3){
-                vo.setStatusText("已售出");
-            }
+            vo.setStatusText(GoodsStatusEnum.getText(goods.getStatus()));
             return vo;
         }).toList();
         //封装分页结果
