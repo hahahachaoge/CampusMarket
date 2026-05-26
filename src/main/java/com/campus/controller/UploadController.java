@@ -1,6 +1,8 @@
 package com.campus.controller;
 
 import com.campus.common.Result;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -11,12 +13,14 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.File;
 import java.util.UUID;
 
+@Tag(name = "文件上传", description = "图片上传、头像上传、商品图片")
 @RestController
 @Slf4j
 public class UploadController {
     // 上传目录
     private static final String UPLOAD_DIR = "C:/upload/";
 
+    @Operation(summary = "图片文件上传", description = "上传商品图片/头像，返回图片访问地址")
     @PostMapping("/upload")
     public Result<String> upload(
             @RequestParam("file") MultipartFile file) throws Exception {

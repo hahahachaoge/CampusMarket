@@ -13,21 +13,24 @@ public class WebMvcConfig implements WebMvcConfigurer {
     ){
         registry.addInterceptor(new JwtInterceptor())
             //拦截所有请求
-            .addPathPatterns("/**").excludePathPatterns(
-                  "/user/login",
-                  "/user/register",
-                  "/goods/list",
-                  "/goods/detail/**",
-                  "/upload",
-                  "/upload/**",
-                  "/doc.html",
-                  "/webjars/**",
-                  "/v3/api-docs/**",
-                  "/goods/search",
-                  "/swagger-resources/**",
-                  "/swagger-ui/**",
-                  "/favicon.ico",
-                  "/test"
+            .addPathPatterns("/**")
+            //无需登录放行接口
+            .excludePathPatterns(
+                    "/user/login",
+                    "/user/register",
+                    "/goods/list",
+                    "/goods/detail/**",
+                    "/goods/search",
+                    "/upload",
+                    "/upload/**",
+                    "/test",
+                    // 接口文档放行
+                    "/doc.html",
+                    "/webjars/**",
+                    "/v3/api-docs/**",
+                    "/swagger-resources/**",
+                    "/swagger-ui/**",
+                    "/favicon.ico"
                 );
     }
 }
