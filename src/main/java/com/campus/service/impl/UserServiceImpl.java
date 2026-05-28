@@ -1,6 +1,7 @@
 package com.campus.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.campus.context.UserContext;
 import com.campus.dto.UpdatePasswordDTO;
 import com.campus.dto.UserUpdateDTO;
@@ -14,12 +15,9 @@ import com.campus.vo.UserVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
-
-import java.lang.invoke.LambdaConversionException;
-
 @Service
 @RequiredArgsConstructor
-public class UserServiceImpl implements UserService {
+public class UserServiceImpl extends ServiceImpl<UserMapper,User> implements UserService {
     private final UserMapper userMapper;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
@@ -114,5 +112,10 @@ public class UserServiceImpl implements UserService {
         String newPassword = passwordEncoder.encode(dto.getNewPassword());
         user.setPassword(newPassword);
         userMapper.updateById(user);
+    }
+
+    @Override
+    public User getByUsername(String username){
+        return lambdaQuery().eq(User::getUsername,username).one();
     }
 }

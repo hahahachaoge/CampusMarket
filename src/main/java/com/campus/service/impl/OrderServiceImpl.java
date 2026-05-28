@@ -2,6 +2,7 @@ package com.campus.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.campus.context.UserContext;
 import com.campus.entity.Goods;
 import com.campus.entity.Order;
@@ -22,7 +23,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-public class OrderServiceImpl implements OrderService {
+public class OrderServiceImpl extends ServiceImpl<OrderMapper,Order> implements OrderService {
     private final GoodsMapper goodsMapper;
     private final OrderMapper orderMapper;
     private final UserMapper userMapper;

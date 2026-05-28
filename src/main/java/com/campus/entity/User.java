@@ -1,5 +1,6 @@
 package com.campus.entity;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -16,4 +17,6 @@ public class User {
     private Integer status;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
+    @Schema(description = "角色 1普通用户 2管理员")
+    private Integer role;
 }

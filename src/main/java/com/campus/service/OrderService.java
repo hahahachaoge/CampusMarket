@@ -1,9 +1,11 @@
 package com.campus.service;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.extension.service.IService;
+import com.campus.entity.Order;
 import com.campus.vo.OrderVO;
 
-public interface OrderService {
+public interface OrderService extends IService<Order> {
     //创建订单
     void create(Long goodsId);
     Page<OrderVO> myBuyerOrders(Integer current, Integer size);

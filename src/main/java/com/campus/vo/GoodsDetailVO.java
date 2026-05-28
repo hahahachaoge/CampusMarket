@@ -1,8 +1,10 @@
 package com.campus.vo;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 public class GoodsDetailVO {
@@ -21,4 +23,6 @@ public class GoodsDetailVO {
     private Long userId;
     private String nickname;
     private String avatar;
+    @Schema(description = "商品图片列表")
+    private List<String> images;
 }

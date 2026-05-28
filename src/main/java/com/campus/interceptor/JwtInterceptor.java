@@ -2,6 +2,9 @@ package com.campus.interceptor;
 
 import com.campus.common.Result;
 import com.campus.context.UserContext;
+import com.campus.entity.User;
+import com.campus.enums.UserRoleEnum;
+import com.campus.service.UserService;
 import com.campus.utils.JwtUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -11,7 +14,10 @@ import org.springframework.web.servlet.HandlerInterceptor;
 import java.io.PrintWriter;
 
 public class JwtInterceptor implements HandlerInterceptor {
-
+    private final UserService userService;
+    public JwtInterceptor(UserService userService){
+        this.userService = userService;
+    }
     @Override
     public boolean preHandle(
             @NonNull HttpServletRequest request,
@@ -34,6 +40,15 @@ public class JwtInterceptor implements HandlerInterceptor {
             Long userId = JwtUtils.parseToken(token);
             // 存入上下文
             UserContext.setUserId(userId);
+            // 管理员权限校验
+            String requestUri = request.getRequestURI();
+            if(requestUri.startsWith("/admin")){
+                User user = userService.getById(userId);
+                if(!UserRoleEnum.ADMIN.getCode().equals(user.getRole())){
+                    writeResult(response,Result.forbidden("无管理员权限"));
+                    return false;
+                }
+            }
         }catch (Exception e){
             writeResult(response, Result.unauthorized("token无效，请重新登录"));
             return false;

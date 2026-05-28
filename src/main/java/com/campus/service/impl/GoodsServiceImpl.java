@@ -2,16 +2,20 @@ package com.campus.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.campus.context.UserContext;
 import com.campus.dto.GoodsPublishDTO;
 import com.campus.dto.GoodsSearchDTO;
 import com.campus.dto.GoodsUpdateDTO;
 import com.campus.entity.Goods;
+import com.campus.entity.GoodsImage;
 import com.campus.entity.User;
 import com.campus.enums.GoodsStatusEnum;
+import com.campus.mapper.GoodsImageMapper;
 import com.campus.mapper.UserMapper;
 import com.campus.mapper.GoodsMapper;
 import com.campus.service.GoodsService;
+import com.campus.utils.RedisUtils;
 import com.campus.vo.GoodsDetailVO;
 import com.campus.vo.GoodsVO;
 import lombok.RequiredArgsConstructor;
@@ -19,11 +23,21 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 @Service
 @RequiredArgsConstructor
-public class GoodsServiceImpl implements GoodsService {
+public class GoodsServiceImpl extends ServiceImpl<GoodsMapper,Goods> implements GoodsService {
     private final GoodsMapper goodsMapper;
     private final UserMapper userMapper;
+    private final GoodsImageMapper goodsImageMapper;
+    private final RedisUtils redisUtils;
+
+    //缓存前缀常量，避免key冲突
+    private static final String GOODS_LIST_CACHE_PREFIX = "campus:goods:list:";
+    private static final String GOODS_SEARCH_CACHE_PREFIX = "campus:goods:search:";
+    private static final String GOODS_DETAIL_CACHE_PREFIX = "campus:goods:detail:";
 
     @Override
     public void publish(GoodsPublishDTO dto){
@@ -40,6 +54,19 @@ public class GoodsServiceImpl implements GoodsService {
         goods.setStatus(GoodsStatusEnum.ON_SALE.getCode());
         goods.setViewCount(0);
         goodsMapper.insert(goods);
+        //保存商品多图
+        if(dto.getImages() != null && !dto.getImages().isEmpty()){
+            List<GoodsImage> images = dto.getImages().stream().map(url->{
+                GoodsImage image = new GoodsImage();
+                image.setGoodsId(goods.getId());
+                image.setImageUrl(url);
+                return image;
+            }).collect(Collectors.toList());
+            //批量插入图片
+            for(GoodsImage image : images){
+                goodsImageMapper.insert(image);
+            }
+        }
     }
 
     @Override
@@ -47,6 +74,14 @@ public class GoodsServiceImpl implements GoodsService {
             Integer current,
             Integer size
     ){
+        //构建缓存key
+        String cacheKey = GOODS_LIST_CACHE_PREFIX + current + ":" + size;
+        //尝试从缓存获取数据
+        Page<GoodsVO> cachedPage = (Page<GoodsVO>) redisUtils.get(cacheKey);
+        if(cachedPage != null){
+            return cachedPage;//缓存命中，直接返回
+        }
+        //缓存未命中，执行原有业务逻辑
         Page<Goods> page = new Page<>(current,size);
         LambdaQueryWrapper<Goods> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Goods::getStatus,GoodsStatusEnum.ON_SALE.getCode());
@@ -73,11 +108,17 @@ public class GoodsServiceImpl implements GoodsService {
                     return vo;
                 }).toList()
         );
+        redisUtils.set(cacheKey,result,300);
         return result;
     }
 
     @Override
     public GoodsDetailVO detail(Long id){
+        String cacheKey = GOODS_DETAIL_CACHE_PREFIX + id;
+        GoodsDetailVO cachedDetail = (GoodsDetailVO) redisUtils.get(cacheKey);
+        if (cachedDetail != null) {
+            return cachedDetail;
+        }
         //查询商品
         Goods goods = goodsMapper.selectById(id);
         if(goods == null){
@@ -97,6 +138,11 @@ public class GoodsServiceImpl implements GoodsService {
             vo.setNickname(user.getNickname());
             vo.setAvatar(user.getAvatar());
         }
+        //查询图片多图并赋值
+        List<GoodsImage> imageList = goodsImageMapper.selectByGoodsId(id);
+        List<String> images = imageList.stream().map(GoodsImage::getImageUrl).collect(Collectors.toList());
+        vo.setImages(images);
+        redisUtils.set(cacheKey, vo, 600);
         return vo;
     }
 
@@ -104,6 +150,12 @@ public class GoodsServiceImpl implements GoodsService {
     public Page<GoodsVO> search(
             GoodsSearchDTO dto
     ){
+        String cacheKey = GOODS_SEARCH_CACHE_PREFIX + dto.hashCode();
+        Page<GoodsVO> cachedPage = (Page<GoodsVO>) redisUtils.get(cacheKey);
+        if(cachedPage != null){
+            return cachedPage;
+        }
+
         Page<Goods> page = new Page<>(
                 dto.getCurrent(),
                 dto.getSize()
@@ -187,6 +239,7 @@ public class GoodsServiceImpl implements GoodsService {
                     return vo;
             }).toList()
         );
+        redisUtils.set(cacheKey,result,300);
         return result;
     }
 
@@ -239,6 +292,10 @@ public class GoodsServiceImpl implements GoodsService {
         }
         //删除商品
         goodsMapper.deleteById(id);
+        //删除商品相关的所有图片
+        goodsImageMapper.deleteByGoodsId(id);
+        //删除当前商品详情缓存
+        redisUtils.delete(GOODS_DETAIL_CACHE_PREFIX + id);
     }
 
     @Override
@@ -257,6 +314,8 @@ public class GoodsServiceImpl implements GoodsService {
         //下架
         goods.setStatus(GoodsStatusEnum.OFF_SALE.getCode());
         goodsMapper.updateById(goods);
+        //删除当前商品详情缓存
+        redisUtils.delete(GOODS_DETAIL_CACHE_PREFIX + id);
     }
 
     @Override
@@ -281,5 +340,22 @@ public class GoodsServiceImpl implements GoodsService {
         goods.setCategory(dto.getCategory());
         goods.setCover(dto.getCover());
         goodsMapper.updateById(goods);
+        //更新商品多图
+        //先删除旧图片
+        goodsImageMapper.deleteByGoodsId(id);
+        //再插入新图片
+        if(dto.getImages() != null && !dto.getImages().isEmpty()){
+            List<GoodsImage> images = dto.getImages().stream().map(url->{
+                GoodsImage image = new GoodsImage();
+                image.setGoodsId(id);
+                image.setImageUrl(url);
+                return image;
+            }).collect(Collectors.toList());
+            for(GoodsImage image : images){
+                goodsImageMapper.insert(image);
+            }
+        }
+        //删除当前商品详情缓存
+        redisUtils.delete(GOODS_DETAIL_CACHE_PREFIX + id);
     }
 }
